@@ -4,10 +4,11 @@ import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { AuthError } from "next-auth";
 
-import { signIn } from "@/auth";
-import { getUserByEmail } from "@/data/user";
-import { LoginSchema, RegisterSchema } from "@/schemas";
 import { db } from "@/lib/db";
+import { signIn, signOut } from "@/auth";
+import { getUserByEmail, getUserByUsername } from "@/data/user";
+import { DEFAULT_LOGIN_REDIRECT } from "@/routes";
+import { LoginSchema, RegisterSchema } from "@/schemas";
 
 export const login = async (values: z.infer<typeof LoginSchema>) => {
   const validatedFields = LoginSchema.safeParse(values);
@@ -19,7 +20,7 @@ export const login = async (values: z.infer<typeof LoginSchema>) => {
     await signIn("credentials", {
       email,
       password,
-      redirectTo: "/",
+      redirectTo: DEFAULT_LOGIN_REDIRECT,
     });
   } catch (error) {
     if (error instanceof AuthError) {
@@ -38,24 +39,23 @@ export const register = async (values: z.infer<typeof RegisterSchema>) => {
   if (!validatedFields.success) {
     return { error: "Invalid fields!" };
   }
-  const { email, username, password } = validatedFields.data;
+  const { email, name, password } = validatedFields.data;
   const isEmailTaken = await getUserByEmail(email);
-  const isUsernameTaken = await getUserByEmail(username);
   if (isEmailTaken) {
     //return this message because of privacy reasons
     return { error: "Invalid fields!" };
   }
-  if (isUsernameTaken) {
-    return { error: "Username already taken" };
-  }
-
   const hashedPassword = await bcrypt.hash(password, 7);
   await db.user.create({
     data: {
-      username,
+      name,
       email,
       password: hashedPassword,
     },
   });
   return { success: "User successfully created!" };
+};
+
+export const logout = async () => {
+  return await signOut();
 };
