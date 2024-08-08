@@ -1,5 +1,5 @@
 import { auth } from "@/auth";
-import { NavBar } from "@/components/nav-bar";
+import { NavBar } from "@/components/dashboard/nav-bar";
 import { SessionProvider } from "next-auth/react";
 
 const DashboardLayout = async ({ children }: { children: React.ReactNode }) => {
