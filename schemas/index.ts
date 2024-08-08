@@ -10,3 +10,13 @@ export const RegisterSchema = z.object({
   name: z.string().min(1, { message: "{Please provide an name" }),
   password: z.string().min(1, { message: "Please provide a passoword" }),
 });
+
+export const SearchSchema = z.object({
+  term: z.string().min(3, { message: "Minimum 3 characters to search" }),
+});
+
+export const TodoSchema = z.object({
+  title: z.string().min(1, { message: "Title is required" }),
+  description: z.string(),
+  isCompleted:z.boolean()
+});
