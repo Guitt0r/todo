@@ -1,85 +1,130 @@
 "use server";
 
+import { signOut } from "@/auth";
 import { db } from "@/lib/db";
 import { currentUser } from "@/lib/user";
 import { TodoSchema } from "@/schemas";
 import { Todo } from "@prisma/client";
-import { redirect } from "next/navigation";
 import { z } from "zod";
 
 export const createTodo = async (values: z.infer<typeof TodoSchema>) => {
-  const sessionUser = await currentUser();
-  const validatedFields = TodoSchema.safeParse(values);
-  if (!sessionUser || !sessionUser.id) {
-    return { error: "Not authorized!" };
-  }
-  if (!validatedFields.success) {
-    return { error: "Invalid fields!" };
-  }
-  const { title, description, isCompleted } = validatedFields.data;
+  try {
+    const sessionUser = await currentUser();
+    const validatedFields = TodoSchema.safeParse(values);
+    if (!sessionUser || !sessionUser.id) {
+      return await signOut();
+    }
+    if (!validatedFields.success) {
+      return { error: "Invalid fields!" };
+    }
+    const { title, description, isCompleted } = validatedFields.data;
 
-  await db.todo.create({
-    data: {
-      title,
-      description,
-      isCompleted,
-      userId: sessionUser.id,
-    },
-  });
-  return { success: "Todo created!" };
+    await db.todo.create({
+      data: {
+        title,
+        description,
+        isCompleted,
+        userId: sessionUser.id,
+      },
+    });
+    return { success: "Todo created!" };
+  } catch (e) {
+    console.log(e);
+    return { error: "Something wend wrong" };
+  }
 };
 
-export const updateTodo = async (id: string, values: Partial<Todo>) => {
-  const sessionUser = await currentUser();
-  const validatedFields = TodoSchema.safeParse(values);
-  if (!sessionUser || !sessionUser.id) {
-    return { error: "Not authorized!" };
-  }
-  if (!validatedFields.success) {
-    return { error: "Invalid fields!" };
-  }
-  const { title, description, isCompleted } = validatedFields.data;
+export const updateTodo = async (
+  id: string,
+  values: z.infer<typeof TodoSchema>
+) => {
+  try {
+    const sessionUser = await currentUser();
+    const validatedFields = TodoSchema.safeParse(values);
+    if (!sessionUser || !sessionUser.id) {
+      return await signOut();
+    }
+    if (!validatedFields.success) {
+      return { error: "Invalid fields!" };
+    }
+    const { title, description, isCompleted } = validatedFields.data;
 
-  await db.todo.updateMany({
-    where: {
-      AND: [{ id }, { userId: sessionUser.id }],
-    },
-    data: {
-      title,
-      description,
-      isCompleted,
-    },
-  });
-  return { success: "Todo updated!" };
+    await db.todo.updateMany({
+      where: {
+        AND: [{ id }, { userId: sessionUser.id }],
+      },
+      data: {
+        title,
+        description,
+        isCompleted,
+      },
+    });
+    return { success: "Todo updated!" };
+  } catch (e) {
+    console.log(e);
+    return { error: "Something wend wrong" };
+  }
+};
+
+export const completeTodo = async (id: string, isCompleted: boolean) => {
+  try {
+    const sessionUser = await currentUser();
+    if (!sessionUser || !sessionUser.id) {
+      return await signOut();
+    }
+
+    await db.todo.updateMany({
+      where: {
+        AND: [{ id }, { userId: sessionUser.id }],
+      },
+      data: {
+        isCompleted,
+      },
+    });
+    return { success: "Todo updated!" };
+  } catch (e) {
+    console.log(e);
+    return { error: "Something wend wrong" };
+  }
 };
 
 export const deleteTodo = async (id: string) => {
-  const sessionUser = await currentUser();
-  if (!sessionUser || !sessionUser.id) {
-    return { error: "Not authorized!" };
-  }
+  try {
+    const sessionUser = await currentUser();
+    if (!sessionUser || !sessionUser.id) {
+      return await signOut();
+    }
 
-  await db.todo.deleteMany({
-    where: {
-      AND: [{ id }, { userId: sessionUser.id }],
-    },
-  });
-  return { success: "Todo deleted successfully!" };
+    await db.todo.deleteMany({
+      where: {
+        AND: [{ id }, { userId: sessionUser.id }],
+      },
+    });
+    return { success: "Todo deleted successfully!" };
+  } catch (e) {
+    console.log(e);
+    return { error: "Something wend wrong" };
+  }
 };
 
 export const getTodoById = async (id: string) => {
-  const sessionUser = await currentUser();
-  if (!sessionUser || !sessionUser.id) {
-    return { error: "Not authorized!" };
-  }
+  try {
+    const sessionUser = await currentUser();
+    if (!sessionUser || !sessionUser.id) {
+      return await signOut();
+    }
 
-  const todo = await db.todo.findFirst({
-    where: {
-      AND: [{ id }, { userId: sessionUser.id }],
-    },
-  });
-  if (!todo) return { error: "Not found" };
-  return { todo };
+    const todo = await db.todo.findFirst({
+      where: {
+        AND: [{ id }, { userId: sessionUser.id }],
+      },
+    });
+    if (!todo) return { error: "Not found" };
+    return { todo };
+  } catch (e) {
+    console.log(e);
+    return { error: "Something wend wrong" };
+  }
 };
 
 export const getTodos = async (options?: {
@@ -89,27 +134,32 @@ export const getTodos = async (options?: {
   limit?: number;
   page?: number;
 }) => {
-  const sessionUser = await currentUser();
-  if (!sessionUser || !sessionUser.id) {
-    return redirect("/auth/login");
+  try {
+    const sessionUser = await currentUser();
+    if (!sessionUser || !sessionUser.id) {
+      return await signOut();
+    }
+
+    const limit = options?.limit || 40;
+    const page = options?.page || 1;
+
+    const todos = await db.todo.findMany({
+      take: limit,
+      skip: (page - 1) * limit,
+      where: {
+        userId: sessionUser.id,
+        ...(options?.completedOnly && { isCompleted: true }),
+        ...(options?.uncompletedOnly && { isCompleted: false }),
+      },
+      orderBy: {
+        createdAt: options?.sort || "desc",
+      },
+    });
+    return { todos };
+  } catch (e) {
+    console.log(e);
+    return { error: "Something wend wrong" };
   }
-
-  const limit = options?.limit || 10;
-  const page = options?.page || 1;
-
-  const todos = await db.todo.findMany({
-    take: limit,
-    skip: (page - 1) * limit,
-    where: {
-      userId: sessionUser.id,
-      ...(options?.completedOnly && { isCompleted: true }),
-      ...(options?.uncompletedOnly && { isCompleted: false }),
-    },
-    orderBy: {
-      updatedAt: options?.sort || "desc",
-    },
-  });
-  return { todos };
 };
 
 export const findTodos = async (
@@ -122,25 +172,33 @@ export const findTodos = async (
     page?: number;
   }
 ) => {
-  const sessionUser = await currentUser();
-  if (!sessionUser || !sessionUser.id) {
-    return null;
+  try {
+    const sessionUser = await currentUser();
+    if (!sessionUser || !sessionUser.id) {
+      return await signOut();
+    }
+
+    const limit = options?.limit || 10;
+    const page = options?.page || 1;
+
+    const todos = await db.todo.findMany({
+      take: limit,
+      skip: (page - 1) * limit,
+      where: {
+        OR: [
+          { title: { contains: term } },
+          { description: { contains: term } },
+        ],
+        ...(options?.completedOnly && { isCompleted: true }),
+        ...(options?.uncompletedOnly && { isCompleted: false }),
+      },
+      orderBy: {
+        createdAt: options?.sort || "desc",
+      },
+    });
+    return { todos };
+  } catch (e) {
+    console.log(e);
+    return { error: "Something wend wrong" };
   }
-
-  const limit = options?.limit || 10;
-  const page = options?.page || 1;
-
-  const todos = await db.todo.findMany({
-    take: limit,
-    skip: (page - 1) * limit,
-    where: {
-      OR: [{ title: { contains: term } }, { description: { contains: term } }],
-      ...(options?.completedOnly && { isCompleted: true }),
-      ...(options?.uncompletedOnly && { isCompleted: false }),
-    },
-    orderBy: {
-      updatedAt: options?.sort || "desc",
-    },
-  });
-  return todos;
 };
