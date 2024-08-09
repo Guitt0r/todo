@@ -57,7 +57,7 @@ export const EditTodoForm = ({
       updateTodoMutation.mutate(
         { id, todo: validatedFields.data },
         {
-          onSuccess: () => onSuccess(),
+          onSuccess: onSuccess,
           onError: (e) => setError(e.message),
         }
       );
