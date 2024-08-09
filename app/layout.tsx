@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Poppins } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
+import { QueryProvider } from "@/providers/query-provider";
 
 const popping = Poppins({
   subsets: ["latin"],
@@ -21,7 +22,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={popping.className}>
-        {children}
+        <QueryProvider>{children}</QueryProvider>
         <Toaster richColors />
       </body>
     </html>
