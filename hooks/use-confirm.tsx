@@ -63,7 +63,7 @@ export const useConfirm = (
           <Button onClick={handleCancel} variant="outline">
             Close
           </Button>
-          <Button variant={confirmButtonVariant} onClick={handleConfirm}>
+          <Button autoFocus variant={confirmButtonVariant} onClick={handleConfirm}>
             {confirmButtonLabel}
           </Button>
         </DialogFooter>
