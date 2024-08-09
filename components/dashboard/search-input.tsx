@@ -15,18 +15,29 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { SearchSchema } from "@/schemas";
+import { useRouter, useSearchParams } from "next/navigation";
 
-type Props = {};
-export const SearchInput = ({}: Props) => {
+export const SearchInput = () => {
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const form = useForm<z.infer<typeof SearchSchema>>({
     resolver: zodResolver(SearchSchema),
     defaultValues: {
-      term: "",
+      term: searchParams.get("term") || "",
     },
   });
 
+  const query = Array.from(searchParams.entries()).reduce(
+    (acc, [key, value]) => {
+      if (key === "term") return acc;
+      acc += `&${key}=${value}`;
+      return acc;
+    },
+    ""
+  );
+
   const onSubmit = (values: z.infer<typeof SearchSchema>) => {
-    console.log(values);
+    router.push(`/?term=${values.term}${query}`);
   };
 
   return (
@@ -64,7 +75,7 @@ export const SearchInput = ({}: Props) => {
       </Form>
       <span className="text-sm underline italic flex items-center gap-x-1">
         <CircleHelpIcon className="size-3" />
-        <p>Minimum 3 characters to search</p>
+        <p>Start typing, to find todos that matches your request.</p>
       </span>
     </div>
   );

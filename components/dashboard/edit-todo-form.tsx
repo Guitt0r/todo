@@ -1,9 +1,8 @@
 "use client";
 
 import { z } from "zod";
-import { toast } from "sonner";
 import { useForm } from "react-hook-form";
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 
 import {
@@ -20,8 +19,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 
 import { TodoSchema } from "@/schemas";
-import { updateTodo } from "@/actions/todo";
 import { FormError } from "../form-error";
+import { useUpdateTodo } from "@/hooks/todo/use-update-todo";
 
 type Props = {
   id: string;
@@ -38,7 +37,9 @@ export const EditTodoForm = ({
   isCompleted,
   onSuccess,
 }: Props) => {
-  const [isPending, startTransition] = useTransition();
+  const updateTodoMutation = useUpdateTodo();
+  const isPending = updateTodoMutation.isPending;
+
   const [error, setError] = useState<string | undefined>();
 
   const form = useForm<z.infer<typeof TodoSchema>>({
@@ -51,15 +52,15 @@ export const EditTodoForm = ({
   });
 
   const onSubmit = (values: z.infer<typeof TodoSchema>) => {
-    startTransition(() => {
-      updateTodo(id, values).then((res) => {
-        setError(res.error);
-        if (res.success) {
-          toast.success(res.success);
-          onSuccess();
+    const validatedFields = TodoSchema.safeParse(values);
+    validatedFields.success &&
+      updateTodoMutation.mutate(
+        { id, todo: validatedFields.data },
+        {
+          onSuccess: () => onSuccess(),
+          onError: (e) => setError(e.message),
         }
-      });
-    });
+      );
   };
 
   return (
