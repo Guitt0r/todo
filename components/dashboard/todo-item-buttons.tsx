@@ -12,21 +12,38 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { EditTodoForm } from "@/components/dashboard/edit-todo-form";
 import { CreateTodoForm } from "@/components/dashboard//create-todo-form";
 
-import { toast } from "sonner";
 import { useState } from "react";
 import { Trash2Icon } from "lucide-react";
-import { useConfirm } from "@/hooks/use-confirm";
 import { type Todo } from "@prisma/client";
-import { deleteTodo } from "@/actions/todo";
+import { useConfirm } from "@/hooks/use-confirm";
+import { useDeleteTodo } from "@/hooks/todo/use-delete-todo";
+import { useCompleteTodo } from "@/hooks/todo/use-complete-todo";
 
-export const AddTodoButton = ({ children }: { children: React.ReactNode }) => {
+export const AddTodoButton = ({
+  children,
+  variant,
+}: {
+  children: React.ReactNode;
+  variant?:
+    | "default"
+    | "link"
+    | "destructive"
+    | "outline"
+    | "secondary"
+    | "ghost"
+    | null
+    | undefined;
+}) => {
   const [open, setOpen] = useState<boolean>(false);
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="secondary">{children}</Button>
+        <Button variant={variant ?? "secondary"}>{children}</Button>
       </DialogTrigger>
-      <DialogContent className="h-[calc(100vh_-_100px)] max-w-2xl w-full">
+      <DialogContent
+        aria-describedby=""
+        className="h-[calc(100vh_-_100px)] max-w-2xl w-full"
+      >
         <DialogTitle className="font-normal">
           <CreateTodoForm onSuccess={() => setOpen(false)} />
         </DialogTitle>
@@ -39,7 +56,7 @@ export const OpenTodoButton = ({
   todo,
   children,
 }: {
-  todo: Omit<Todo, "userId" | "createdAt">;
+  todo: Omit<Todo, "userId" | "updatedAt">;
   children: React.ReactNode;
 }) => {
   const [open, setOpen] = useState<boolean>(false);
@@ -48,13 +65,16 @@ export const OpenTodoButton = ({
       <DialogTrigger asChild>
         <Button>{children}</Button>
       </DialogTrigger>
-      <DialogContent className="h-[calc(100vh_-_100px)] max-w-2xl w-full">
+      <DialogContent
+        aria-describedby=""
+        className="h-[calc(100vh_-_100px)] max-w-2xl w-full"
+      >
         <DialogTitle className="font-normal">
           <EditTodoForm onSuccess={() => setOpen(false)} {...todo} />
         </DialogTitle>
         <DialogFooter className="items-center sm:justify-between flex-row">
           <p className="text-muted-foreground">
-            {todo.updatedAt.toDateString()}
+            {todo.createdAt.toDateString()}
           </p>
           <DeleteTodoButton id={todo.id} onSuccess={() => setOpen(false)} />
         </DialogFooter>
@@ -70,6 +90,7 @@ export const DeleteTodoButton = ({
   id: string;
   onSuccess?: () => void;
 }) => {
+  const deleteTodoMutation = useDeleteTodo();
   const [ConfirmationDialog, confirm] = useConfirm(
     "Are you sure?",
     "You are about to delete this todo item.",
@@ -79,9 +100,8 @@ export const DeleteTodoButton = ({
   const handleDelete = async () => {
     const ok = await confirm();
     if (ok) {
-      return deleteTodo(id).then((res) => {
-        !!onSuccess && onSuccess();
-        res.success && toast.success(res.success);
+      deleteTodoMutation.mutate(id, {
+        onSuccess: () => onSuccess && onSuccess(),
       });
     }
   };
@@ -101,13 +121,20 @@ export const DeleteTodoButton = ({
 };
 
 export const ToggleCompleteButton = ({
+  id,
   isCompleted,
 }: {
+  id: string;
   isCompleted: boolean;
-}) => (
-  <Checkbox
-    checked={isCompleted}
-    onCheckedChange={() => {}}
-    className="size-5 shrink-0"
-  />
-);
+}) => {
+  const completeTodoMutation = useCompleteTodo();
+  return (
+    <Checkbox
+      checked={isCompleted}
+      onCheckedChange={() => {
+        completeTodoMutation.mutate({ id, isCompleted: !isCompleted }, {});
+      }}
+      className="size-5 shrink-0"
+    />
+  );
+};

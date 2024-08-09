@@ -1,9 +1,8 @@
 "use client";
 
 import { z } from "zod";
-import { toast } from "sonner";
 import { useForm } from "react-hook-form";
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 
 import {
@@ -22,15 +21,16 @@ import { DialogClose } from "@/components/ui/dialog";
 import { FormError } from "@/components/form-error";
 
 import { TodoSchema } from "@/schemas";
-import { createTodo } from "@/actions/todo";
+import { useCreateTodo } from "@/hooks/todo/use-create-todo";
 
 type Props = {
   onSuccess: () => void;
 };
 
 export const CreateTodoForm = ({ onSuccess }: Props) => {
-  const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | undefined>();
+  const createTodoMutation = useCreateTodo();
+  const isPending = createTodoMutation.isPending
 
   const form = useForm<z.infer<typeof TodoSchema>>({
     resolver: zodResolver(TodoSchema),
@@ -42,14 +42,9 @@ export const CreateTodoForm = ({ onSuccess }: Props) => {
   });
 
   const onSubmit = (values: z.infer<typeof TodoSchema>) => {
-    startTransition(() => {
-      createTodo(values).then((res) => {
-        setError(res.error);
-        if (res.success) {
-          toast.success(res.success);
-          onSuccess();
-        }
-      });
+    createTodoMutation.mutate(values, {
+      onSuccess: () => onSuccess(),
+      onError: (e) => setError(e.message),
     });
   };
 

@@ -12,11 +12,11 @@ export const RegisterSchema = z.object({
 });
 
 export const SearchSchema = z.object({
-  term: z.string().min(3, { message: "Minimum 3 characters to search" }),
+  term: z.string(),
 });
 
 export const TodoSchema = z.object({
   title: z.string().min(1, { message: "Title is required" }),
   description: z.string(),
-  isCompleted:z.boolean()
+  isCompleted: z.boolean(),
 });

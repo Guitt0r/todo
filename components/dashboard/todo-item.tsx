@@ -13,13 +13,13 @@ import {
 import { cn } from "@/lib/utils";
 import { Todo } from "@prisma/client";
 
-type Props = Omit<Todo, "userId" | "createdAt">;
+type Props = Omit<Todo, "userId" | "updatedAt">;
 export const TodoItem = ({
   id,
   title,
   description,
   isCompleted,
-  updatedAt,
+  createdAt,
 }: Props) => {
   return (
     <Card className="shadow-md">
@@ -33,7 +33,7 @@ export const TodoItem = ({
         >
           {title}
         </span>
-        <ToggleCompleteButton isCompleted={isCompleted} />
+        <ToggleCompleteButton id={id} isCompleted={isCompleted} />
       </CardHeader>
       {!!description && (
         <CardContent>
@@ -50,7 +50,7 @@ export const TodoItem = ({
       )}
       <CardFooter className="gap-x-2 pb-1 mt-auto">
         <OpenTodoButton
-          todo={{ id, title, description, isCompleted, updatedAt }}
+          todo={{ id, title, description, isCompleted, createdAt }}
         >
           See more
         </OpenTodoButton>
@@ -58,7 +58,7 @@ export const TodoItem = ({
       </CardFooter>
       <hr className="border my-2" />
       <div className="text-end px-6 pb-1.5 text-sm text-muted-foreground">
-        {updatedAt.toDateString()}
+        {createdAt.toDateString()}
       </div>
     </Card>
   );
