@@ -1,24 +1,30 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
-import { Checkbox } from "../ui/checkbox";
-import { Label } from "../ui/label";
+import { usePathname, useSearchParams } from "next/navigation";
+
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "../ui/select";
-import { useSearchParams } from "next/navigation";
-import { Button } from "../ui/button";
-import Link from "next/link";
+} from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+
+import { useCreateQueryString } from "@/hooks/use-create-query-string";
 
 type TodoFilter = "active" | "completed" | null;
 type Props = {};
 
 export const Filters = ({}: Props) => {
   const searchParams = useSearchParams();
+  const pathname = usePathname();
+  const createQueryString = useCreateQueryString(searchParams);
+
   const filter = searchParams.get("filter") as TodoFilter | null;
   const sortParam = searchParams.get("sort");
 
@@ -51,19 +57,13 @@ export const Filters = ({}: Props) => {
         break;
     }
   };
-  const query = Array.from(searchParams.entries()).reduce(
-    (acc, [key, value]) => {
-      if (key === "sort" || key === "filter") return acc;
-      acc += `${key}=${value}&`;
-      return acc;
-    },
-    "?"
-  );
 
   return (
-    <div className="flex items-center gap-x-4">
+    <div className="flex items-center gap-x-4 gap-y-3 flex-wrap">
       <div className="flex items-end gap-x-1">
-        <Label htmlFor="completed">Completed only </Label>
+        <Label className="whitespace-nowrap" htmlFor="completed">
+          Completed only{" "}
+        </Label>
         <Checkbox
           onCheckedChange={handleCompletedCheck}
           checked={todoFilter === "completed"}
@@ -71,7 +71,9 @@ export const Filters = ({}: Props) => {
         />
       </div>
       <div className="flex items-end gap-x-1">
-        <Label htmlFor="active">Active only</Label>
+        <Label className="whitespace-nowrap" htmlFor="active">
+          Active only
+        </Label>
         <Checkbox
           onCheckedChange={handleActiveCheck}
           checked={todoFilter === "active"}
@@ -94,7 +96,16 @@ export const Filters = ({}: Props) => {
         </Select>
       </div>
       <Button size="sm">
-        <Link href={`/${query}sort=${sort}&filter=${todoFilter || ""}`}>
+        <Link
+          href={
+            pathname +
+            "?" +
+            createQueryString([
+              { name: "sort", value: sort },
+              { name: "filter", value: todoFilter ?? "" },
+            ])
+          }
+        >
           Apply filters
         </Link>
       </Button>
