@@ -1,5 +1,5 @@
 import { getTodos } from "@/actions/todo";
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 
 export const useGetTodos = (options?: {
   completedOnly?: boolean;
@@ -7,6 +7,7 @@ export const useGetTodos = (options?: {
   sort?: "asc" | "desc";
   limit?: number;
   page?: number;
+  term?: string;
 }) => {
   return useQuery({
     queryKey: [
@@ -14,6 +15,8 @@ export const useGetTodos = (options?: {
       { completedOnly: options?.completedOnly },
       { uncompletedOnly: options?.uncompletedOnly },
       { sort: options?.sort },
+      { term: options?.term },
+      { page: options?.page },
     ],
     queryFn: async () => {
       const res = await getTodos({
@@ -22,8 +25,10 @@ export const useGetTodos = (options?: {
         sort: options?.sort,
         limit: options?.limit,
         page: options?.page,
+        term: options?.term,
       });
-      return res.todos;
+      return { todos: res.todos, pagination: res.pagination };
     },
+    placeholderData: keepPreviousData,
   });
 };
