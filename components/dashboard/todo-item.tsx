@@ -26,9 +26,9 @@ export const TodoItem = ({
       <CardHeader className="flex-row justify-between text-xl font-semibold pb-1 mb-4 border-b-[3px] space-x-2">
         <span
           className={cn(
+            "max-w-[90%] break-words line-clamp-3",
             isCompleted &&
-              "line-through text-muted-foreground decoration-primary",
-            "break-words"
+              "line-through text-muted-foreground decoration-primary"
           )}
         >
           {title}
