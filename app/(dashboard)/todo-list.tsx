@@ -1,31 +1,30 @@
 "use client";
 import { useSearchParams } from "next/navigation";
-import { useFindTodos } from "@/hooks/todo/use-find-todos";
 import { useGetTodos } from "@/hooks/todo/use-get-todos";
 
 import { TodoItem } from "@/components/dashboard/todo-item";
 import { Loader2Icon, PlusIcon } from "lucide-react";
 import { AddTodoButton } from "@/components/dashboard/todo-item-buttons";
+import { TodoPagination } from "@/components/dashboard/todo-pagination";
 
 type Props = {};
 export const TodoList = ({}: Props) => {
   const searchParams = useSearchParams();
   const term = searchParams.get("term");
   const filter = searchParams.get("filter");
+  const page = searchParams.get("page");
   const sort = searchParams.get("sort") as "asc" | "desc";
 
   const getTodosQuery = useGetTodos({
     completedOnly: filter == "completed",
     uncompletedOnly: filter == "active",
     sort: sort,
+    term: term || "",
+    page: page ? +page : 1,
   });
-  const findTodosQuery = useFindTodos(term!, {
-    completedOnly: filter == "completed",
-    uncompletedOnly: filter == "active",
-    sort: sort,
-  });
-  const todos = (term ? findTodosQuery.data : getTodosQuery.data) || [];
-  const isLoading = findTodosQuery.isLoading || getTodosQuery.isLoading;
+  const todos = getTodosQuery.data?.todos || [];
+  const pagination = getTodosQuery.data?.pagination;
+  const isLoading = getTodosQuery.isLoading;
 
   if (isLoading)
     return (
@@ -56,17 +55,23 @@ export const TodoList = ({}: Props) => {
     );
   }
   return (
-    <section className="grid grid-cols-4 gap-4">
-      {todos.map((todo) => (
-        <TodoItem
-          key={todo.id}
-          id={todo.id}
-          title={todo.title}
-          description={todo.description}
-          isCompleted={todo.isCompleted}
-          createdAt={todo.createdAt}
-        />
-      ))}
-    </section>
+    <div>
+      <section className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-10">
+        {todos.map((todo) => (
+          <TodoItem
+            key={todo.id}
+            id={todo.id}
+            title={todo.title}
+            description={todo.description}
+            isCompleted={todo.isCompleted}
+            createdAt={todo.createdAt}
+          />
+        ))}
+      </section>
+      <TodoPagination
+        currentPage={pagination?.currentPage || 1}
+        lastPage={pagination?.lastPage || 1}
+      />
+    </div>
   );
 };

@@ -133,6 +133,7 @@ export const getTodos = async (options?: {
   sort?: "asc" | "desc";
   limit?: number;
   page?: number;
+  term?: string;
 }) => {
   try {
     const sessionUser = await currentUser();
@@ -140,14 +141,19 @@ export const getTodos = async (options?: {
       return await signOut();
     }
 
-    const limit = options?.limit || 40;
+    const limit = options?.limit || 12;
     const page = options?.page || 1;
-
     const todos = await db.todo.findMany({
       take: limit,
       skip: (page - 1) * limit,
       where: {
         userId: sessionUser.id,
+        ...(options?.term && {
+          OR: [
+            { title: { contains: options.term } },
+            { description: { contains: options.term } },
+          ],
+        }),
         ...(options?.completedOnly && { isCompleted: true }),
         ...(options?.uncompletedOnly && { isCompleted: false }),
       },
@@ -155,48 +161,27 @@ export const getTodos = async (options?: {
         createdAt: options?.sort || "desc",
       },
     });
-    return { todos };
-  } catch (e) {
-    console.log(e);
-    return { error: "Something wend wrong" };
-  }
-};
-
-export const findTodos = async (
-  term: string,
-  options?: {
-    completedOnly?: boolean;
-    uncompletedOnly?: boolean;
-    sort?: "asc" | "desc";
-    limit?: number;
-    page?: number;
-  }
-) => {
-  try {
-    const sessionUser = await currentUser();
-    if (!sessionUser || !sessionUser.id) {
-      return await signOut();
-    }
-
-    const limit = options?.limit || 10;
-    const page = options?.page || 1;
-
-    const todos = await db.todo.findMany({
-      take: limit,
-      skip: (page - 1) * limit,
+    const total = await db.todo.count({
       where: {
-        OR: [
-          { title: { contains: term } },
-          { description: { contains: term } },
-        ],
+        userId: sessionUser.id,
+        ...(options?.term && {
+          OR: [
+            { title: { contains: options.term } },
+            { description: { contains: options.term } },
+          ],
+        }),
         ...(options?.completedOnly && { isCompleted: true }),
         ...(options?.uncompletedOnly && { isCompleted: false }),
       },
-      orderBy: {
-        createdAt: options?.sort || "desc",
-      },
     });
-    return { todos };
+    return {
+      todos,
+      pagination: {
+        currentPage: page,
+        lastPage: Math.ceil(total / limit),
+        perPage: limit,
+      },
+    };
   } catch (e) {
     console.log(e);
     return { error: "Something wend wrong" };
