@@ -16,7 +16,10 @@ export const SearchSchema = z.object({
 });
 
 export const TodoSchema = z.object({
-  title: z.string().min(1, { message: "Title is required" }),
+  title: z
+    .string()
+    .min(1, { message: "Title is required" })
+    .max(30, { message: "30 characters max!" }),
   description: z.string(),
   isCompleted: z.boolean(),
 });
