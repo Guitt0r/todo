@@ -6,9 +6,9 @@ const DashboardLayout = async ({ children }: { children: React.ReactNode }) => {
   const session = await auth();
   return (
     <SessionProvider session={session}>
-      <main>
+      <main className="min-h-screen w-full flex flex-col">
         <NavBar />
-        <div className="ml-24">{children}</div>
+        <div className="lg:ml-24 flex-1">{children}</div>
       </main>
     </SessionProvider>
   );

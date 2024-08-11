@@ -17,7 +17,6 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { DialogClose } from "@/components/ui/dialog";
 import { FormError } from "@/components/form-error";
 
 import { TodoSchema } from "@/schemas";
@@ -30,7 +29,7 @@ type Props = {
 export const CreateTodoForm = ({ onSuccess }: Props) => {
   const [error, setError] = useState<string | undefined>();
   const createTodoMutation = useCreateTodo();
-  const isPending = createTodoMutation.isPending
+  const isPending = createTodoMutation.isPending;
 
   const form = useForm<z.infer<typeof TodoSchema>>({
     resolver: zodResolver(TodoSchema),
@@ -42,10 +41,12 @@ export const CreateTodoForm = ({ onSuccess }: Props) => {
   });
 
   const onSubmit = (values: z.infer<typeof TodoSchema>) => {
-    createTodoMutation.mutate(values, {
-      onSuccess: () => onSuccess(),
-      onError: (e) => setError(e.message),
-    });
+    const validatedFields = TodoSchema.safeParse(values);
+    validatedFields.success &&
+      createTodoMutation.mutate(validatedFields.data, {
+        onSuccess: onSuccess,
+        onError: (e) => setError(e.message),
+      });
   };
 
   return (
@@ -108,11 +109,9 @@ export const CreateTodoForm = ({ onSuccess }: Props) => {
           />
         </div>
         <FormError message={error} />
-        <DialogClose asChild>
-          <Button disabled={isPending} type="submit" className="w-full">
-            Create
-          </Button>
-        </DialogClose>
+        <Button disabled={isPending} type="submit" className="w-full">
+          Create
+        </Button>
       </form>
     </Form>
   );
